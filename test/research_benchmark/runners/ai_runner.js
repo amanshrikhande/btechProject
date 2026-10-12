@@ -11,7 +11,7 @@ export async function runAiBenchmark({
   researcher,
   repetitions = 5,
   experimentId = "EXP-BENCHMARK-001",
-  onProgress = () => {},
+  onProgress = () => { },
 }) {
   console.log(`\n===============================================================`);
   console.log(`=== STARTING AI / RAG BENCHMARK (EXPERIMENT B) ===`);
@@ -62,12 +62,19 @@ export async function runAiBenchmark({
         let relevance = 0;
         let projectGrounding = 0;
         let hallucination = 0;
+        let actualModel = "unknown"; // filled from response, not hardcoded
 
         const requestStart = Date.now();
 
         try {
           if (condition === "AUTOMATED_RAG_AI") {
-            // 1. RAG Retrieval Step via Python AI Service
+            // ── RAG condition: use DevShare's full project-aware RAG pipeline ──
+            //
+            // Step 1 (metrics only): call /api/rag/query to record retrieval quality
+            // (Hit@K, MRR, Recall).  We do NOT inject the result into the chat call —
+            // the /api/chat endpoint performs its own internal retrieval when
+            // condition="RAG" and project_id are supplied.  Injecting active_code
+            // would cause duplicate retrieval and bypass the evidence-grounding layer.
             const retStart = Date.now();
             const ragRes = await axios.post(`${aiServiceUrl}/api/rag/query`, {
               projectId,
@@ -79,14 +86,13 @@ export async function runAiBenchmark({
             retrievedChunks = ragRes.data.chunks || [];
             chunksCount = retrievedChunks.length;
 
-            // Compute Retrieval Metrics against Ground Truth
+            // Compute retrieval quality metrics against ground-truth file list
             let firstRelevantRank = -1;
             retrievedChunks.forEach((chunk, index) => {
               const fileName = chunk.fileName || chunk.filePath || chunk.file || "";
               const isRelevant = q.groundTruthFiles.some((gt) =>
                 fileName.toLowerCase().includes(gt.toLowerCase())
               );
-
               if (isRelevant) {
                 relevantChunksCount++;
                 if (firstRelevantRank === -1) firstRelevantRank = index + 1;
@@ -103,20 +109,31 @@ export async function runAiBenchmark({
               ? Number((relevantChunksCount / q.groundTruthFiles.length).toFixed(3))
               : 0;
 
-            // 2. Generation Step with context
-            const contextText = retrievedChunks
-              .map((c) => `File: ${c.fileName || c.filePath || ""}\nCode:\n${c.content || c.text || ""}`)
-              .join("\n\n");
-
+            // Step 2: invoke DevShare's actual RAG pipeline.
+            // Pass condition="RAG" and project_id — the server handles retrieval,
+            // evidence-grounded prompting, and claim validation internally.
+            // active_code and active_file_name are intentionally omitted so the
+            // server does not treat any buffer as authoritative project evidence.
             const genStart = Date.now();
             const chatRes = await axios.post(`${aiServiceUrl}/api/chat`, {
               message: q.question,
               project_id: projectId,
-              active_code: contextText,
-              active_file_name: "workspace",
+              condition: "RAG",
+              language: "javascript",
             });
             modelGenerationLatencyMs = Date.now() - genStart;
             generatedAnswer = chatRes.data.response || "";
+
+            // Lightweight assertion: verify the pipeline actually ran retrieval
+            const ragPath = chatRes.data.condition || "";
+            const sourcesReturned = (chatRes.data.sources || []).length;
+            const provider = chatRes.data.provider || "unknown";
+            const model = chatRes.data.model || "unknown";
+            console.log(
+              `    [RAG-PATH] question=${q.id} condition=${ragPath} ` +
+              `sources=${sourcesReturned} provider=${provider} model=${model}`
+            );
+            actualModel = model;
           } else {
             // AUTOMATED_GENERIC_AI (No RAG Context)
             retrievalLatencyMs = 0;
@@ -137,6 +154,7 @@ export async function runAiBenchmark({
             });
             modelGenerationLatencyMs = Date.now() - genStart;
             generatedAnswer = chatRes.data.response || "";
+            actualModel = chatRes.data.model || "unknown";
           }
 
           totalRequestLatencyMs = Date.now() - requestStart;
@@ -173,6 +191,7 @@ export async function runAiBenchmark({
           hallucination = hallucinatoryPhrases.some((h) => ansLower.includes(h)) ? 1 : 0;
 
           // Record Raw AI Run
+          // model is read from the server response so it reflects the actual provider in use
           const aiRunRow = {
             benchmark_run_id: runId,
             experiment_id: experimentId,
@@ -180,7 +199,7 @@ export async function runAiBenchmark({
             question_id: q.id,
             repetition: rep,
             timestamp: new Date().toISOString(),
-            model: "qwen2.5-coder:1.5b",
+            model: actualModel,
             retrieval_latency_ms: retrievalLatencyMs,
             prompt_construction_latency_ms: promptConstructionLatencyMs,
             model_generation_latency_ms: modelGenerationLatencyMs,

@@ -238,6 +238,59 @@ export const submitQuestionnaireResponse = async (req, res) => {
   }
 };`,
     },
+    // Q08 and Q09 require Python AI-service source code.
+    // A representative excerpt from main.py is included so the RAG index
+    // can retrieve relevant evidence for these questions.
+    {
+      name: "main.py",
+      content: `"""
+DevShare AI Service – FastAPI entry point.
+Exposes endpoints for ChromaDB RAG indexing and chat generation.
+"""
+import chromadb
+from chromadb import PersistentClient
+
+# ChromaDB persistent client stored under ./chroma_db
+client = PersistentClient(path="./chroma_db")
+
+def get_relevant_chunks(project_id: str, query: str, top_k: int = 5):
+    """Retrieve top-k chunks from the project's ChromaDB collection using cosine distance embeddings."""
+    collection_name = f"proj_{project_id}"
+    collection = client.get_collection(name=collection_name)
+    results = collection.query(query_texts=[query], n_results=top_k, include=["documents", "metadatas", "distances"])
+    chunks = []
+    for i, doc in enumerate(results["documents"][0]):
+        meta = results["metadatas"][0][i]
+        dist = results["distances"][0][i]
+        cosine_sim = round(max(0.0, min(1.0, 1.0 - dist)), 4)
+        chunks.append({"content": doc, "fileName": meta.get("fileName", ""), "score": cosine_sim})
+    return chunks
+
+def index_project(project_id: str, files: list):
+    """Chunk project files and persist embeddings into a project-isolated ChromaDB collection."""
+    collection_name = f"proj_{project_id}"
+    try:
+        client.delete_collection(name=collection_name)
+    except Exception:
+        pass
+    collection = client.create_collection(name=collection_name, metadata={"hnsw:space": "cosine"})
+    ids, docs, metas = [], [], []
+    for f in files:
+        content = f.get("content", "")
+        chunk_size = 30  # lines per chunk
+        lines = content.split("\\n")
+        for i in range(0, len(lines), chunk_size):
+            chunk_lines = lines[i : i + chunk_size]
+            chunk_text = "\\n".join(chunk_lines)
+            chunk_id = f"{f['fileId']}_{i}"
+            ids.append(chunk_id)
+            docs.append(chunk_text)
+            metas.append({"fileName": f["fileName"], "filePath": f.get("filePath", ""), "startLine": i + 1})
+    if ids:
+        collection.add(ids=ids, documents=docs, metadatas=metas)
+    return {"indexed": len(ids)}
+`,
+    },
   ];
 
   for (const f of filesToCreate) {
@@ -279,6 +332,7 @@ async function main() {
   const args = process.argv.slice(2);
   let taskRepetitions = 10;
   let aiRepetitions = 2; // High-speed default for live Ollama generations
+  let aiQuestionLimit = 0; // 0 = all questions; set via --ai-questions=N for pilots
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -290,6 +344,10 @@ async function main() {
       aiRepetitions = parseInt(args[i + 1], 10);
     } else if (arg.startsWith("--ai-repetitions=")) {
       aiRepetitions = parseInt(arg.split("=")[1], 10);
+    } else if (arg === "--ai-questions" && args[i + 1]) {
+      aiQuestionLimit = parseInt(args[i + 1], 10);
+    } else if (arg.startsWith("--ai-questions=")) {
+      aiQuestionLimit = parseInt(arg.split("=")[1], 10);
     } else if (/^\d+$/.test(arg)) {
       if (i === 0) taskRepetitions = parseInt(arg, 10);
       else if (i === 1) aiRepetitions = parseInt(arg, 10);
@@ -337,7 +395,7 @@ async function main() {
   const aiResults = await runAiBenchmark({
     aiServiceUrl: AI_SERVICE_URL,
     backendUrl: SERVER_URL,
-    questions: BENCHMARK_QUESTIONS,
+    questions: aiQuestionLimit > 0 ? BENCHMARK_QUESTIONS.slice(0, aiQuestionLimit) : BENCHMARK_QUESTIONS,
     projectId,
     researcher,
     repetitions: aiRepetitions,
