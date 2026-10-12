@@ -1,0 +1,16 @@
+{
+  "name": "devshare-rag",
+  "description": "DevShare RAG AI Service - FastAPI + ChromaDB + sentence-transformers",
+  "services": [
+    {
+      "name": "devshare-rag",
+      "dockerfile": "Dockerfile",
+      "context": ".",
+      "port": 8000,
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      }
+    }
+  ]
+}

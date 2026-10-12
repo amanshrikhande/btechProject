@@ -1,0 +1,16 @@
+{
+  "name": "devshare-backend",
+  "description": "DevShare Backend API + Socket.IO server",
+  "services": [
+    {
+      "name": "devshare-backend",
+      "dockerfile": "backend/Dockerfile",
+      "context": ".",
+      "port": 5000,
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": "5000"
+      }
+    }
+  ]
+}
