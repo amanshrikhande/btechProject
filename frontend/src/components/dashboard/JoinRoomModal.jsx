@@ -10,57 +10,27 @@ export const JoinRoomModal = ({ isOpen, onClose }) => {
 
   const handleJoin = (e) => {
     e.preventDefault();
-    if (!roomId.trim()) {
-      setError("Please enter a valid Room ID or Project ID");
-      return;
-    }
+    if (!roomId.trim()) { setError("Please enter a valid Room ID or Project ID"); return; }
     onClose();
     navigate(`/workspace/${roomId.trim()}`);
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Join Collaborative Room">
-      <form onSubmit={handleJoin} className="space-y-4">
-        {error && (
-          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
-            {error}
+      <form onSubmit={handleJoin}>
+        {error && <div className="alert-error">{error}</div>}
+        <div className="form-group">
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--c-text-2)", marginBottom: 7 }}>Room Code / Project ID</label>
+          <div className="input-icon">
+            <Hash size={15} className="icon-left" />
+            <input className="input" type="text" placeholder="e.g. room_a1b2c3d4 or 64f..." value={roomId} onChange={e => setRoomId(e.target.value)} style={{ fontFamily: "monospace" }} autoFocus />
           </div>
-        )}
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-            Room Code / Project ID
-          </label>
-          <div className="relative">
-            <Hash className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="e.g. room_a1b2c3d4 or 64f..."
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              className="w-full bg-[#151624] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono transition-colors"
-              autoFocus
-            />
-          </div>
-          <p className="text-[11px] text-gray-500 mt-1.5">
-            Ask your collaborator for their room ID or project link.
-          </p>
+          <p style={{ fontSize: 11, color: "var(--c-text-3)", marginTop: 6 }}>Ask your collaborator for their room ID or project link.</p>
         </div>
-
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-secondary text-xs px-4 py-2"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5"
-          >
-            <LogIn className="w-4 h-4" />
-            Join Room
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 14, borderTop: "1px solid var(--c-border)" }}>
+          <button type="button" onClick={onClose} className="btn btn-secondary btn-sm">Cancel</button>
+          <button type="submit" className="btn btn-primary btn-sm">
+            <LogIn size={13} /> Join Room
           </button>
         </div>
       </form>

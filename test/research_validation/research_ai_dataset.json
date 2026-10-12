@@ -1,0 +1,122 @@
+[
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"GENERIC_AI",
+    "question":"Where is authentication implemented?",
+    "latency_ms":5194,
+    "retrieved_chunks_count":0,
+    "retrieval_relevant":"NO",
+    "eval_correctness":1,
+    "eval_relevance":1,
+    "eval_grounding":0,
+    "eval_hallucination":0
+  },
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"GENERIC_AI",
+    "question":"Which component establishes the Socket.IO connection?",
+    "latency_ms":5246,
+    "retrieved_chunks_count":0,
+    "retrieval_relevant":"NO",
+    "eval_correctness":1,
+    "eval_relevance":1,
+    "eval_grounding":0,
+    "eval_hallucination":0
+  },
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"GENERIC_AI",
+    "question":"Why does the project endpoint return an unauthorized response?",
+    "latency_ms":5220,
+    "retrieved_chunks_count":0,
+    "retrieval_relevant":"NO",
+    "eval_correctness":1,
+    "eval_relevance":1,
+    "eval_grounding":0,
+    "eval_hallucination":0
+  },
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"GENERIC_AI",
+    "question":"How does a registration request travel from the frontend to the database?",
+    "latency_ms":5259,
+    "retrieved_chunks_count":0,
+    "retrieval_relevant":"NO",
+    "eval_correctness":1,
+    "eval_relevance":1,
+    "eval_grounding":0,
+    "eval_hallucination":0
+  },
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"GENERIC_AI",
+    "question":"Which files need to be changed to implement project sharing?",
+    "latency_ms":5206,
+    "retrieved_chunks_count":0,
+    "retrieval_relevant":"NO",
+    "eval_correctness":1,
+    "eval_relevance":1,
+    "eval_grounding":0,
+    "eval_hallucination":0
+  },
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"RAG_AI",
+    "question":"Where is authentication implemented?",
+    "latency_ms":5210,
+    "retrieved_chunks_count":1,
+    "retrieval_relevant":"YES",
+    "eval_correctness":2,
+    "eval_relevance":2,
+    "eval_grounding":2,
+    "eval_hallucination":0
+  },
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"RAG_AI",
+    "question":"Which component establishes the Socket.IO connection?",
+    "latency_ms":5235,
+    "retrieved_chunks_count":1,
+    "retrieval_relevant":"YES",
+    "eval_correctness":2,
+    "eval_relevance":2,
+    "eval_grounding":2,
+    "eval_hallucination":0
+  },
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"RAG_AI",
+    "question":"Why does the project endpoint return an unauthorized response?",
+    "latency_ms":5280,
+    "retrieved_chunks_count":3,
+    "retrieval_relevant":"YES",
+    "eval_correctness":2,
+    "eval_relevance":2,
+    "eval_grounding":2,
+    "eval_hallucination":0
+  },
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"RAG_AI",
+    "question":"How does a registration request travel from the frontend to the database?",
+    "latency_ms":5245,
+    "retrieved_chunks_count":3,
+    "retrieval_relevant":"YES",
+    "eval_correctness":2,
+    "eval_relevance":2,
+    "eval_grounding":2,
+    "eval_hallucination":0
+  },
+  {
+    "experiment_id":"EXP_B",
+    "ai_condition":"RAG_AI",
+    "question":"Which files need to be changed to implement project sharing?",
+    "latency_ms":5218,
+    "retrieved_chunks_count":3,
+    "retrieval_relevant":"YES",
+    "eval_correctness":2,
+    "eval_relevance":2,
+    "eval_grounding":2,
+    "eval_hallucination":0
+  }
+]

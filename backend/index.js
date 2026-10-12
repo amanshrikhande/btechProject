@@ -15,6 +15,10 @@ import fileRoutes from "./routes/file.routes.js";
 import versionRoutes from "./routes/version.routes.js";
 import executionRoutes from "./routes/execution.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";
+import taskRoutes from "./routes/task.routes.js";
+import questionnaireRoutes from "./routes/questionnaire.routes.js";
+import { getProjectIndexStatus } from "./controllers/ai.controller.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -52,6 +56,12 @@ app.use("/api/files", fileRoutes);
 app.use("/api/files", versionRoutes);
 app.use("/api/execution", executionRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/questionnaires", questionnaireRoutes);
+
+// Direct Phase 3 RAG diagnostic route: GET /api/rag/status?projectId=<id>
+app.get("/api/rag/status", getProjectIndexStatus);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

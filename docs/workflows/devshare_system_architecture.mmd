@@ -1,0 +1,205 @@
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'13px'}}}%%
+graph TB
+    subgraph ClientLayer["CLIENT LAYER"]
+        WebApp[React 19 + Vite 6<br/>SPA with Routing]
+        Monaco[Monaco Editor<br/>Code Editing]
+        WebApp --> Monaco
+    end
+    
+    subgraph APILayer["NODE.JS BACKEND - EXPRESS SERVER"]
+        Gateway[Express Gateway<br/>Port 5000<br/>REST API]
+        AuthMW[Auth Middleware<br/>JWT Verification]
+        OptAuth[Optional Auth<br/>Public Access]
+        
+        Gateway --> AuthMW
+        Gateway --> OptAuth
+        
+        subgraph Routes["API Routes"]
+            AuthRoute[/api/auth<br/>Login, Register]
+            ProjectRoute[/api/projects<br/>CRUD]
+            FileRoute[/api/files<br/>File Ops]
+            ExecRoute[/api/execution<br/>Code Run]
+            AIRoute[/api/ai<br/>AI Proxy]
+            AnalyticsRoute[/api/analytics<br/>Session Data]
+            TaskRoute[/api/tasks<br/>Research Tasks]
+        end
+        
+        AuthMW --> Routes
+        OptAuth --> Routes
+    end
+    
+    subgraph RealtimeLayer["REAL-TIME COLLABORATION - SOCKET.IO"]
+        SocketServer[Socket.IO Server<br/>WebSocket + Polling]
+        RoomManager[Room State Manager<br/>In-Memory Map]
+        
+        SocketServer --> RoomManager
+        
+        subgraph SocketEvents["Socket Events"]
+            JoinEvent[join, userJoined]
+            CodeEvent[codeChange, fileSwitch]
+            CursorEvent[cursorMove]
+            LeaderEvent[enableLeaderMode<br/>grantEditPermission]
+            InterviewEvent[startInterview<br/>interviewActivity]
+            WebRTCEvent[webrtc-join<br/>webrtc-signal]
+        end
+        
+        RoomManager --> SocketEvents
+    end
+    
+    subgraph PersistenceLayer["PERSISTENCE LAYER - MONGODB"]
+        MongoDB[(MongoDB<br/>Mongoose ODM)]
+        
+        subgraph Models["Data Models"]
+            UserModel[User<br/>Auth + Roles]
+            ProjectModel[Project<br/>Owner + Members]
+            FileModel[ProjectFile<br/>Content + Metadata]
+            SessionModel[RoomSession<br/>Collaboration State]
+            EventModel[SessionEvent<br/>Telemetry Logs]
+            VersionModel[CodeVersion<br/>Snapshots]
+            ExecModel[ExecutionLog<br/>Run History]
+            TaskModel[ResearchTask<br/>Participant Data]
+        end
+        
+        MongoDB --> Models
+    end
+    
+    subgraph AILayer["PYTHON AI SERVICE - FASTAPI"]
+        FastAPI[FastAPI Server<br/>Port 8000<br/>CORS Enabled]
+        
+        subgraph AIEndpoints["AI Endpoints"]
+            HealthEP[GET /api/health]
+            AnalyzeEP[POST /api/analyze<br/>Static Analysis]
+            IndexEP[POST /api/rag/index<br/>Index Files]
+            StatusEP[GET /api/rag/status<br/>Index Status]
+            QueryEP[POST /api/rag/query<br/>Retrieve Context]
+            ChatEP[POST /api/chat<br/>Conversational AI]
+        end
+        
+        FastAPI --> AIEndpoints
+    end
+    
+    subgraph RAGLayer["RAG INDEXING & RETRIEVAL PIPELINE"]
+        Chunker[Smart Chunker<br/>AST-Based Python/JS<br/>Sliding Window Others]
+        EmbedEngine[Embedding Engine<br/>⚠️ Hash Fallback<br/>sentence-transformers stub]
+        
+        subgraph RetrievalChannels["4-Channel Retrieval"]
+            FileMatch[Filename Matcher<br/>Regex + Basename]
+            BM25[BM25 Lexical Index<br/>In-Memory per Project]
+            VectorDB[(ChromaDB<br/>Persistent Vector Store<br/>Collection: proj_id)]
+            DepGraph[Dependency Graph<br/>Import/ImportedBy Map]
+        end
+        
+        Chunker --> EmbedEngine
+        EmbedEngine --> VectorDB
+        Chunker --> BM25
+        Chunker --> DepGraph
+        
+        subgraph Fusion["Hybrid Fusion"]
+            RankFusion[Weighted Rank Fusion<br/>0.4×vec + 0.25×lex<br/>0.2×dep + 0.15×file]
+            Selector[Candidate Selection<br/>Architecture vs Precision]
+        end
+        
+        FileMatch --> RankFusion
+        BM25 --> RankFusion
+        VectorDB --> RankFusion
+        DepGraph --> RankFusion
+        RankFusion --> Selector
+    end
+    
+    subgraph LLMLayer["LLM INFERENCE LAYER"]
+        LLMRouter{LLM Provider}
+        
+        OpenRouterAPI[OpenRouter/OpenAI API<br/>gpt-4o-mini<br/>75s timeout, 2 retries]
+        OllamaLocal[Local Ollama Server<br/>qwen2.5-coder:1.5b<br/>Port 11434]
+        
+        LLMRouter -->|API Key Present| OpenRouterAPI
+        LLMRouter -->|Fallback| OllamaLocal
+        
+        PromptBuilder[Prompt Builder<br/>System + Evidence + Query]
+        EvidenceValidator[Evidence Validator<br/>Claim Verification<br/>Source Citation]
+        
+        PromptBuilder --> LLMRouter
+        LLMRouter --> EvidenceValidator
+    end
+    
+    subgraph StaticAnalysis["STATIC CODE ANALYSIS"]
+        PatternEngine[Pattern Matcher<br/>Regex-Based Heuristics<br/>⚠️ NOT Neural CodeBERT]
+        ASTValidator[Python AST Validator<br/>SyntaxError Detection]
+        
+        PatternEngine --> ASTValidator
+    end
+    
+    subgraph ExecutionLayer["CODE EXECUTION INTEGRATION"]
+        PistonClient[Piston API Client<br/>https://emkc.org/api/v2/piston]
+        LocalExec[Local Executor<br/>Node.js / Python<br/>Subprocess Fallback]
+        
+        PistonClient -->|Unavailable| LocalExec
+    end
+    
+    subgraph CommunicationLayer["WEBRTC PEER-TO-PEER COMMUNICATION"]
+        SignalingServer[Socket.IO Signaling<br/>Offer/Answer/ICE]
+        STUNServers[Google STUN Servers<br/>stun.l.google.com:19302]
+        PeerMesh[Full-Mesh Topology<br/>RTCPeerConnection<br/>Audio + Video]
+        
+        SignalingServer --> STUNServers
+        STUNServers --> PeerMesh
+    end
+    
+    subgraph ResearchLayer["RESEARCH TELEMETRY & ANALYTICS"]
+        EventLogger[Event Logger<br/>USER_JOINED, CODE_EDIT<br/>AI_QUERY, INTERVIEW_*]
+        InterviewMonitor[Interview Focus Monitor<br/>TAB_HIDDEN/VISIBLE<br/>Leader Alerts]
+        AnalyticsExport[Analytics Exporter<br/>CSV/JSON<br/>Session Summaries]
+        
+        EventLogger --> InterviewMonitor
+        InterviewMonitor --> AnalyticsExport
+    end
+    
+    %% Client to Backend
+    WebApp -->|HTTP REST| Gateway
+    WebApp -->|WebSocket| SocketServer
+    WebApp -->|WebRTC Mesh| PeerMesh
+    
+    %% Backend to Persistence
+    Routes --> MongoDB
+    RoomManager -.->|Debounced Save| MongoDB
+    SocketEvents -.->|Event Logging| EventModel
+    
+    %% Backend to AI Service
+    AIRoute -->|HTTP Proxy| FastAPI
+    
+    %% AI Service to RAG
+    AIEndpoints --> Chunker
+    AIEndpoints --> RetrievalChannels
+    AIEndpoints --> PromptBuilder
+    
+    %% AI Service to Static Analysis
+    AnalyzeEP --> PatternEngine
+    
+    %% Backend to Execution
+    ExecRoute --> PistonClient
+    
+    %% Realtime to Communication
+    SocketEvents --> SignalingServer
+    
+    %% Realtime to Research
+    SocketEvents --> EventLogger
+    
+    %% Analytics to Persistence
+    AnalyticsExport --> SessionModel
+    AnalyticsExport --> EventModel
+    
+    %% Styling
+    classDef client fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    classDef backend fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    classDef storage fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    classDef ai fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    classDef warning fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,stroke-dasharray: 5 5
+    classDef external fill:#fce4ec,stroke:#e91e63,stroke-width:2px
+    
+    class WebApp,Monaco client
+    class Gateway,AuthMW,OptAuth,Routes,SocketServer,RoomManager,SocketEvents backend
+    class MongoDB,Models storage
+    class FastAPI,AIEndpoints,Chunker,RankFusion,Selector,PromptBuilder,EvidenceValidator ai
+    class EmbedEngine,PatternEngine warning
+    class PistonClient,STUNServers,OpenRouterAPI external
+    class VectorDB,BM25,DepGraph storage

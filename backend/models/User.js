@@ -31,6 +31,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "Collaborative developer on DevShare",
     },
+    role: {
+      type: String,
+      enum: ["developer", "researcher", "admin"],
+      default: "developer",
+    },
   },
   { timestamps: true }
 );

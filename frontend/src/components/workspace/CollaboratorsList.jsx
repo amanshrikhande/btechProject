@@ -3,56 +3,88 @@ import { useSocket } from "../../context/SocketContext.jsx";
 import { Users, Copy, Check, Radio } from "lucide-react";
 
 export const CollaboratorsList = ({ roomId, onLeaveRoom }) => {
-  const { users, collaborators, typingUser } = useSocket();
+  const { users, collaborators, typingUser, roomPermissions, leaderMode } = useSocket();
   const [copied, setCopied] = useState(false);
 
-  const handleCopyRoomId = () => {
+  const handleCopy = () => {
     navigator.clipboard.writeText(roomId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Fallback to legacy string array if collaborator objects not yet populated
   const displayUsers =
     collaborators.length > 0
       ? collaborators
-      : users.map((u) => ({ name: u, avatar: null }));
+      : users.map((u) => ({ name: u, avatar: null, socketId: null }));
 
   return (
-    <div className="p-3 bg-[#10111a] border-t border-border-subtle select-none">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-          <Users className="w-3.5 h-3.5 text-cyan-400" />
+    <div className="collab-panel">
+      <div className="collab-header">
+        <span className="collab-label">
+          <Users size={12} color="var(--c-cyan)" />
           Active Peers ({displayUsers.length})
         </span>
-
         <button
-          onClick={handleCopyRoomId}
-          title="Copy Room ID"
-          className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono"
+          onClick={handleCopy}
+          className="btn-ghost flex items-center gap-1"
+          style={{ fontSize: 11, fontFamily: "monospace", color: "var(--c-cyan)", padding: "3px 6px" }}
         >
-          {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+          {copied ? <Check size={11} color="var(--c-emerald)" /> : <Copy size={11} />}
           {copied ? "Copied" : "Copy ID"}
         </button>
       </div>
 
-      {/* Collaborator Avatars & Names */}
-      <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
-        {displayUsers.map((collab, index) => (
-          <div
-            key={index}
-            className="flex items-center gap-2 px-2 py-1 rounded bg-[#161826] text-xs font-mono text-gray-200"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 shadow-sm shadow-emerald-400/50" />
-            <span className="truncate">{collab.name}</span>
-          </div>
-        ))}
+      <div className="collab-list">
+        {displayUsers.map((c, i) => {
+          const perm = roomPermissions.find((p) => p.name === c.name || p.socketId === c.socketId);
+          const isLeader = perm?.role === "LEADER";
+          const isEditor = perm?.role === "EDITOR" || (!leaderMode && !isLeader);
+          const isViewer = perm?.role === "VIEWER" || (leaderMode && !isLeader && !perm?.canEdit);
+
+          return (
+            <div key={i} className="collab-item" style={{ justifyContent: "space-between" }}>
+              <div className="flex items-center gap-2" style={{ overflow: "hidden" }}>
+                <span
+                  className="dot dot-green"
+                  style={{ width: 7, height: 7, boxShadow: "0 0 6px var(--c-emerald)", flexShrink: 0 }}
+                />
+                <span className="truncate">{c.name}</span>
+              </div>
+              <span
+                style={{
+                  fontSize: 8,
+                  fontFamily: "monospace",
+                  fontWeight: 700,
+                  padding: "1px 5px",
+                  borderRadius: 4,
+                  flexShrink: 0,
+                  background: isLeader
+                    ? "rgba(245,158,11,0.15)"
+                    : isViewer
+                    ? "rgba(244,63,94,0.15)"
+                    : "rgba(16,185,129,0.15)",
+                  color: isLeader
+                    ? "var(--c-amber)"
+                    : isViewer
+                    ? "var(--c-rose)"
+                    : "var(--c-emerald)",
+                  border: isLeader
+                    ? "1px solid rgba(245,158,11,0.3)"
+                    : isViewer
+                    ? "1px solid rgba(244,63,94,0.3)"
+                    : "1px solid rgba(16,185,129,0.3)",
+                }}
+              >
+                {isLeader ? "👑 LEADER" : isViewer ? "VIEW ONLY" : "EDITING"}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Typing Indicator */}
       {typingUser && (
-        <div className="mt-2 text-[11px] text-cyan-400 font-mono italic animate-pulse flex items-center gap-1.5">
-          <Radio className="w-3 h-3" />
+        <div className="collab-typing">
+          <Radio size={10} className="animate-pulse" />
           {typingUser}
         </div>
       )}

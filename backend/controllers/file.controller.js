@@ -1,6 +1,49 @@
+import axios from "axios";
+import { config } from "../config/config.js";
 import { ProjectFile } from "../models/ProjectFile.js";
 import { Project } from "../models/Project.js";
 import { CodeVersion } from "../models/CodeVersion.js";
+
+const syncFileToAI = (projectId, file) => {
+  if (!config.aiServiceUrl || !projectId || !file) return;
+  axios.post(
+    `${config.aiServiceUrl}/api/rag/file/update`,
+    {
+      projectId: projectId.toString(),
+      file: {
+        fileId: file._id.toString(),
+        projectId: projectId.toString(),
+        fileName: file.name,
+        filePath: file.path,
+        language: file.language,
+        content: file.content || "",
+      },
+    },
+    {
+      headers: { "X-Internal-Service-Key": config.internalServiceKey },
+      timeout: 10000,
+    }
+  ).catch((err) => {
+    console.warn(`[RAG Incremental Sync Warning] ${file.name || file._id}:`, err.message);
+  });
+};
+
+const removeFileFromAI = (projectId, fileId) => {
+  if (!config.aiServiceUrl || !projectId || !fileId) return;
+  axios.delete(
+    `${config.aiServiceUrl}/api/rag/file/delete`,
+    {
+      headers: { "X-Internal-Service-Key": config.internalServiceKey },
+      data: {
+        projectId: projectId.toString(),
+        fileId: fileId.toString(),
+      },
+      timeout: 10000,
+    }
+  ).catch((err) => {
+    console.warn(`[RAG Incremental Delete Warning] ${fileId}:`, err.message);
+  });
+};
 
 // Helper to determine language by file extension
 const getLanguageFromFilename = (filename) => {
@@ -86,17 +129,22 @@ export const createFile = async (req, res, next) => {
     });
 
     // Create version snapshot 1
+    // Note: CodeVersion.content is required — use a single newline for truly empty files
+    // so Mongoose's required validator doesn't reject it.
     await CodeVersion.create({
       projectId,
       fileId: file._id,
       fileName: file.name,
       versionNumber: 1,
-      content,
-      author: req.user ? req.user._id : project.owner,
+      content: content || "\n",
+      author: (req.user ? req.user._id : null) || project.owner,
       authorName: req.user ? req.user.name : "System",
       changeSummary: `Created ${file.name}`,
       triggerType: "manual",
     });
+
+    // Trigger async incremental RAG index update
+    syncFileToAI(projectId, file);
 
     res.status(201).json({ success: true, data: file });
   } catch (error) {
@@ -135,6 +183,9 @@ export const updateFile = async (req, res, next) => {
 
     await file.save();
 
+    // Trigger async incremental RAG index update
+    syncFileToAI(file.projectId, file);
+
     res.json({ success: true, data: file });
   } catch (error) {
     next(error);
@@ -161,6 +212,9 @@ export const renameFile = async (req, res, next) => {
 
     await file.save();
 
+    // Trigger async incremental RAG index update
+    syncFileToAI(file.projectId, file);
+
     res.json({ success: true, data: file });
   } catch (error) {
     next(error);
@@ -183,8 +237,14 @@ export const deleteFile = async (req, res, next) => {
       return res.status(400).json({ error: "Cannot delete the only file in the project" });
     }
 
+    const projectId = file.projectId;
+    const fileId = file._id;
+
     await CodeVersion.deleteMany({ fileId: file._id });
     await ProjectFile.findByIdAndDelete(file._id);
+
+    // Trigger async incremental RAG index deletion
+    removeFileFromAI(projectId, fileId);
 
     res.json({ success: true, message: "File successfully deleted" });
   } catch (error) {

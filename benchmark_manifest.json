@@ -1,0 +1,36 @@
+{
+  "benchmark_run_id": "BENCHMARK-1789928178675",
+  "date": "2026-09-20T18:28:02.252Z",
+  "duration_seconds": 703,
+  "git_commit": "284ff7bd9e1ee67c17516b716f13febbda7f67cb",
+  "environment": {
+    "os_platform": "win32",
+    "os_release": "10.0.19045",
+    "os_arch": "x64",
+    "node_version": "v22.15.1",
+    "python_version": "Python 3.13.5",
+    "mongodb_version": "8.2.0 (Port 27017)",
+    "ollama_version": "ollama version is 0.33.3",
+    "chromadb_version": "1.5.9 (PersistentClient)",
+    "execution_engine": "Piston Code Sandbox"
+  },
+  "ai_configuration": {
+    "model_name": "qwen2.5-coder:1.5b",
+    "embedding_dim": 384,
+    "retrieval_top_k": 5,
+    "codebert_status": "FALLBACK_AST_HEURISTIC"
+  },
+  "benchmark_parameters": {
+    "tasks_count": 10,
+    "task_repetitions": 2,
+    "ai_questions_count": 20,
+    "ai_repetitions": 1,
+    "random_seed": 42,
+    "bootstrap_iterations": 1000,
+    "confidence_interval_level": 0.95
+  },
+  "dataset_versions": {
+    "tasks_dataset_version": "1.0.0 (10 categories)",
+    "ai_questions_dataset_version": "1.0.0 (20 questions with ground-truth)"
+  }
+}

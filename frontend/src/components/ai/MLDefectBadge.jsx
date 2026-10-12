@@ -1,87 +1,34 @@
 import { ShieldCheck, AlertTriangle, AlertOctagon, Zap, ShieldAlert, Cpu } from "lucide-react";
 
+const CONFIGS = {
+  NO_ISSUE:          { Icon: ShieldCheck,  label: "No Issues Flagged",      cls: "ok" },
+  LOGIC_ERROR:       { Icon: AlertTriangle, label: "Potential Logic Defect", cls: "warn" },
+  RUNTIME_ERROR:     { Icon: AlertOctagon,  label: "Runtime Hazard",         cls: "danger" },
+  PERFORMANCE_ISSUE: { Icon: Zap,           label: "Performance Bottleneck", cls: "warn" },
+  SECURITY_ISSUE:    { Icon: ShieldAlert,   label: "Security Risk",          cls: "danger" },
+};
+
 export const MLDefectBadge = ({ analysis }) => {
   if (!analysis) return null;
-
   const { classification = "NO_ISSUE", confidence = 1.0, details, suggestions = [] } = analysis;
-
-  const getBadgeConfig = () => {
-    switch (classification) {
-      case "NO_ISSUE":
-        return {
-          icon: ShieldCheck,
-          label: "No Issues Flagged",
-          bg: "bg-emerald-500/10",
-          text: "text-emerald-400",
-          border: "border-emerald-500/30",
-        };
-      case "LOGIC_ERROR":
-        return {
-          icon: AlertTriangle,
-          label: "Potential Logic Defect",
-          bg: "bg-amber-500/10",
-          text: "text-amber-400",
-          border: "border-amber-500/30",
-        };
-      case "RUNTIME_ERROR":
-        return {
-          icon: AlertOctagon,
-          label: "Runtime Hazard",
-          bg: "bg-rose-500/10",
-          text: "text-rose-400",
-          border: "border-rose-500/30",
-        };
-      case "PERFORMANCE_ISSUE":
-        return {
-          icon: Zap,
-          label: "Performance Bottleneck",
-          bg: "bg-purple-500/10",
-          text: "text-purple-400",
-          border: "border-purple-500/30",
-        };
-      case "SECURITY_ISSUE":
-        return {
-          icon: ShieldAlert,
-          label: "Security Risk",
-          bg: "bg-red-500/10",
-          text: "text-red-400",
-          border: "border-red-500/30",
-        };
-      default:
-        return {
-          icon: Cpu,
-          label: classification,
-          bg: "bg-cyan-500/10",
-          text: "text-cyan-400",
-          border: "border-cyan-500/30",
-        };
-    }
-  };
-
-  const config = getBadgeConfig();
-  const Icon = config.icon;
+  const cfg = CONFIGS[classification] || { Icon: Cpu, label: classification, cls: "ok" };
+  const { Icon, label, cls } = cfg;
 
   return (
-    <div className={`p-2.5 rounded-xl border ${config.bg} ${config.border} space-y-1.5`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <Icon className={`w-4 h-4 ${config.text}`} />
-          <span className={`text-xs font-semibold ${config.text}`}>
-            {config.label}
-          </span>
+    <div className={`ml-badge ${cls}`} style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, padding: "8px 10px", borderRadius: 8 }}>
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <Icon size={14} />
+          <span style={{ fontSize: 11, fontWeight: 700 }}>{label}</span>
         </div>
-        <span className="text-[10px] font-mono text-gray-400 bg-black/30 px-1.5 py-0.5 rounded">
+        <span style={{ fontSize: 10, fontFamily: "monospace", opacity: 0.7, padding: "1px 5px", borderRadius: 4, background: "rgba(0,0,0,0.2)" }}>
           CodeBERT {Math.round(confidence * 100)}%
         </span>
       </div>
-
-      {details && <p className="text-[11px] text-gray-300 leading-snug">{details}</p>}
-
-      {suggestions && suggestions.length > 0 && (
-        <ul className="text-[10px] text-gray-400 list-disc list-inside pt-1 space-y-0.5">
-          {suggestions.map((s, i) => (
-            <li key={i}>{s}</li>
-          ))}
+      {details && <p style={{ fontSize: 11, opacity: 0.85, lineHeight: 1.5 }}>{details}</p>}
+      {suggestions.length > 0 && (
+        <ul style={{ fontSize: 10, opacity: 0.7, paddingLeft: 14 }}>
+          {suggestions.map((s, i) => <li key={i}>{s}</li>)}
         </ul>
       )}
     </div>

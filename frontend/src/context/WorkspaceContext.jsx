@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { projectsAPI } from "../api/projects.api.js";
 import { filesAPI } from "../api/files.api.js";
 import { versionsAPI } from "../api/versions.api.js";
+import { aiAPI } from "../api/ai.api.js";
 import { useSocket } from "./SocketContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
@@ -9,7 +10,7 @@ const WorkspaceContext = createContext();
 
 export const WorkspaceProvider = ({ children }) => {
   const { user } = useAuth();
-  const { socket, emitCodeChange, emitLanguageChange, emitTyping } = useSocket();
+  const { socket, emitCodeChange, emitLanguageChange, emitTyping, canEdit, isLeader, leaderMode } = useSocket();
 
   const [project, setProject] = useState(null);
   const [files, setFiles] = useState([]);
@@ -24,9 +25,26 @@ export const WorkspaceProvider = ({ children }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [executionTime, setExecutionTime] = useState(null);
   const [activeBottomTab, setActiveBottomTab] = useState("terminal"); // 'terminal', 'history', 'errors'
-  const [isAIOpen, setIsAIOpen] = useState(true);
+  const [isAIOpen, setIsAIOpen] = useState(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [activeSidePanel, setActiveSidePanel] = useState("none"); // 'none' | 'leader' | 'communication' | 'interviewActivity'
+  const [stdin, setStdin] = useState("");
   const [fileVersions, setFileVersions] = useState([]);
+  const [editorInstance, setEditorInstance] = useState(null);
+  const reindexTimerRef = useRef(null);
+
+  // Silently re-index project files in the background (debounced)
+  const triggerAutoReindex = useCallback((projectId) => {
+    if (!projectId) return;
+    if (reindexTimerRef.current) clearTimeout(reindexTimerRef.current);
+    reindexTimerRef.current = setTimeout(() => {
+      aiAPI.indexProjectFiles(projectId).catch((err) => {
+        console.warn("[AutoReindex] Background indexing failed:", err.message);
+      });
+    }, 2000); // 2s debounce so rapid file ops don't spam the AI service
+  }, []);
+
 
   // Load project by ID or Room ID
   const loadProject = async (projectIdOrRoom) => {
@@ -45,6 +63,10 @@ export const WorkspaceProvider = ({ children }) => {
         setCode(entry.content || "");
         setLanguage(entry.language || "javascript");
       }
+
+      // Auto-index on project load so RAG is always ready
+      triggerAutoReindex(proj._id);
+
       return proj;
     } catch (err) {
       console.error("[Load Project Error]:", err);
@@ -117,26 +139,28 @@ export const WorkspaceProvider = ({ children }) => {
   }, [socket, activeFile]);
 
   // Select a file
-  const selectFile = (file) => {
-    // If selecting currently active file, no-op
-    if (activeFile && activeFile._id === file._id) return;
+  const selectFile = useCallback(
+    (file) => {
+      if (!file) return;
+      // If selecting currently active file, no-op
+      if (activeFile && activeFile._id === file._id) return;
 
-    // Save previous file in files list
-    if (activeFile) {
-      setFiles((prev) =>
-        prev.map((f) => (f._id === activeFile._id ? { ...f, content: code, language } : f))
-      );
-    }
+      // Save previous file in files list
+      if (activeFile) {
+        setFiles((prev) =>
+          prev.map((f) => (f._id === activeFile._id ? { ...f, content: code, language } : f))
+        );
+      }
 
-    setActiveFile(file);
-    setCode(file.content || "");
-    setLanguage(file.language || "javascript");
+      setActiveFile(file);
+      setCode(file.content || "");
+      setLanguage(file.language || "javascript");
 
-    // Add to open tabs if not present
-    if (!openTabs.some((t) => t._id === file._id)) {
-      setOpenTabs((prev) => [...prev, file]);
-    }
-  };
+      // Add to open tabs if not present
+      setOpenTabs((prev) => (!prev.some((t) => t._id === file._id) ? [...prev, file] : prev));
+    },
+    [activeFile, code, language]
+  );
 
   // Close a tab
   const closeTab = (fileId, e) => {
@@ -155,8 +179,126 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
+  // Jump to specific file and line range in Monaco editor (Priority: 1. fileId, 2. exact filePath, 3. filename)
+  const jumpToFileAndLine = useCallback(
+    (target, startLine = 1, endLine = null) => {
+      if (!target) return;
+
+      let targetId = null;
+      let targetPath = null;
+      let targetName = null;
+
+      if (typeof target === "object") {
+        targetId = target.fileId || target._id || null;
+        targetPath = target.filePath || target.path || null;
+        targetName = target.fileName || target.name || null;
+      } else if (typeof target === "string") {
+        // If 24-char hex string, could be fileId
+        if (/^[0-9a-fA-F]{24}$/.test(target)) {
+          targetId = target;
+        } else if (target.includes("/") || target.includes("\\")) {
+          targetPath = target;
+          targetName = target.split("/").pop().split("\\").pop();
+        } else {
+          targetName = target;
+        }
+      }
+
+      // Priority 1: Match by exact fileId
+      let targetFile = null;
+      if (targetId) {
+        targetFile = files.find((f) => f._id?.toString() === targetId.toString());
+      }
+
+      // Priority 2: Match by exact filePath
+      if (!targetFile && targetPath) {
+        targetFile = files.find(
+          (f) =>
+            f.path === targetPath ||
+            f.path === `/${targetPath.replace(/^\//, "")}` ||
+            targetPath.endsWith(f.path)
+        );
+      }
+
+      // Priority 3: Fallback by fileName
+      if (!targetFile && (targetName || targetPath)) {
+        const lookup = (targetName || targetPath).split("/").pop().split("\\").pop();
+        targetFile = files.find(
+          (f) =>
+            f.name === lookup ||
+            f.path?.endsWith(lookup) ||
+            lookup.endsWith(f.name)
+        );
+      }
+
+      if (targetFile) {
+        selectFile(targetFile);
+      }
+
+      const sLine = Math.max(1, Number(startLine || 1));
+      const eLine = Math.max(sLine, Number(endLine || sLine));
+
+      if (editorInstance) {
+        setTimeout(() => {
+          try {
+            if (eLine > sLine) {
+              editorInstance.revealRangeInCenter({
+                startLineNumber: sLine,
+                startColumn: 1,
+                endLineNumber: eLine,
+                endColumn: 1000,
+              });
+              editorInstance.setSelection({
+                startLineNumber: sLine,
+                startColumn: 1,
+                endLineNumber: eLine,
+                endColumn: 1000,
+              });
+            } else {
+              editorInstance.revealLineInCenter(sLine);
+              editorInstance.setPosition({ lineNumber: sLine, column: 1 });
+            }
+            editorInstance.focus();
+
+            // Temporary 3-second highlight decoration
+            const decos = editorInstance.deltaDecorations(
+              [],
+              [
+                {
+                  range: {
+                    startLineNumber: sLine,
+                    startColumn: 1,
+                    endLineNumber: eLine,
+                    endColumn: 1000,
+                  },
+                  options: {
+                    isWholeLine: true,
+                    className: "monaco-ai-finding-highlight",
+                  },
+                },
+              ]
+            );
+            setTimeout(() => {
+              try {
+                editorInstance.deltaDecorations(decos, []);
+              } catch (e) {}
+            }, 3000);
+          } catch (e) {
+            console.warn("[Editor Jump Error]:", e);
+          }
+        }, 200);
+      }
+    },
+    [files, selectFile, editorInstance]
+  );
+
   // Handle local code changes
   const handleCodeChange = (newCode) => {
+    // If Leader Mode is active and user is not permitted to edit, block local mutation
+    if (leaderMode && !canEdit && !isLeader) {
+      return;
+    }
+
     setCode(newCode);
     setSaveStatus("saving");
 
@@ -190,6 +332,8 @@ export const WorkspaceProvider = ({ children }) => {
       const newFile = res.data;
       setFiles((prev) => [...prev, newFile]);
       selectFile(newFile);
+      // Re-index after file creation so the new file is immediately searchable
+      triggerAutoReindex(project._id);
       return newFile;
     } catch (err) {
       console.error("[Create File Error]:", err);
@@ -203,6 +347,8 @@ export const WorkspaceProvider = ({ children }) => {
       await filesAPI.deleteFile(fileId);
       setFiles((prev) => prev.filter((f) => f._id !== fileId));
       closeTab(fileId);
+      // Re-index after file deletion to remove stale embeddings
+      triggerAutoReindex(project?._id);
     } catch (err) {
       console.error("[Delete File Error]:", err);
       throw err;
@@ -272,7 +418,12 @@ export const WorkspaceProvider = ({ children }) => {
         activeBottomTab,
         isAIOpen,
         isVersionModalOpen,
+        isAnalyticsOpen,
+        activeSidePanel,
         fileVersions,
+        stdin,
+        setStdin,
+        setCode,
         setProject,
         loadProject,
         selectFile,
@@ -286,9 +437,14 @@ export const WorkspaceProvider = ({ children }) => {
         setActiveBottomTab,
         setIsAIOpen,
         setIsVersionModalOpen,
+        setIsAnalyticsOpen,
+        setActiveSidePanel,
         loadVersions,
         saveSnapshot,
         restoreVersion,
+        editorInstance,
+        setEditorInstance,
+        jumpToFileAndLine,
       }}
     >
       {children}

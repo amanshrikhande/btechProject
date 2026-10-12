@@ -1,0 +1,3 @@
+condition,evaluations_count,mean_correctness,median_correctness,ci95_correctness_low,ci95_correctness_high,mean_relevance,median_relevance,mean_project_grounding,median_project_grounding,ci95_grounding_low,ci95_grounding_high,mean_hallucination_rate,mean_total_latency_ms,median_total_latency_ms,ci95_latency_low,ci95_latency_high
+AUTOMATED_GENERIC_AI,20,0.75,0.5,0.4,1.1,0.55,0.5,0.5,0.5,0.3,0.7,0.0,8200.35,7798.5,7772.41875,8840.07
+AUTOMATED_RAG_AI,20,1.05,1.0,0.65,1.45,1.1,1.0,1.1,1.0,0.8,1.45,0.0,23607.45,23331.0,22093.03125,25358.285

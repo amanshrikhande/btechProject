@@ -1,0 +1,6 @@
+metric,iterations,seed,mean_difference,lower_95,upper_95,mean
+Completion Time Paired Difference (Controlled - Normal),1000,42,,0.2,0.6012499999999988,
+RAG project_grounding,1000,42,,0.8,1.45,1.1
+RAG correctness,1000,42,,0.65,1.45,1.05
+RAG relevance,1000,42,,0.7,1.5,1.1
+RAG total_request_latency_ms,1000,42,,22093.03125,25358.285,23607.45

@@ -1,0 +1,145 @@
+%%{init: {'theme':'base', 'themeVariables': { 'fontSize':'14px'}}}%%
+flowchart TB
+    subgraph IndexingProcess["A. PROJECT INDEXING PIPELINE"]
+        direction TB
+        SaveFile([Project Files Saved<br/>in MongoDB]) --> IndexTrigger{Index<br/>Trigger}
+        IndexTrigger -->|Manual Index| IndexReq
+        IndexTrigger -->|File Updated| IndexReq
+        IndexReq[Index Request<br/>projectId + files] --> FetchFiles[Retrieve Files<br/>from MongoDB ProjectFile]
+        
+        FetchFiles --> FilterFiles[Filter Files:<br/>Skip node_modules, .git, binaries]
+        FilterFiles --> LoopFiles{For Each<br/>File}
+        
+        LoopFiles --> DetectLang[Detect Language<br/>from Extension]
+        DetectLang --> ComputeHash[Compute File Hash<br/>SHA-256]
+        ComputeHash --> CheckStale{Hash<br/>Mismatch?}
+        
+        CheckStale -->|No Change| SkipFile[Skip File]
+        CheckStale -->|Changed/New| ChunkFile[Language-Aware Chunking]
+        
+        ChunkFile --> ASTChunk{Language<br/>Supports AST?}
+        ASTChunk -->|Python| PythonAST[Python AST:<br/>Functions, Classes]
+        ASTChunk -->|JS/TS| JSRegex[Regex-Based:<br/>Functions, Classes]
+        ASTChunk -->|Other| SlidingWindow[Sliding Window:<br/>300 lines, 100 overlap]
+        
+        PythonAST --> ExtractMeta
+        JSRegex --> ExtractMeta
+        SlidingWindow --> ExtractMeta[Extract Metadata]
+        
+        ExtractMeta --> AttachMeta[Attach to Each Chunk:<br/>fileId, filePath<br/>startLine, endLine<br/>symbol, language<br/>fileContentHash]
+        
+        AttachMeta --> ComputeChunkHash[Compute Chunk Hash<br/>SHA-256]
+        ComputeChunkHash --> ExtractImports[Extract Imports:<br/>AST or Regex]
+        
+        ExtractImports --> GenerateEmbed[Generate Embeddings]
+        GenerateEmbed --> EmbedCheck{sentence-transformers<br/>Loaded?}
+        
+        EmbedCheck -->|No| HashEmbed[Hash-Based Fallback:<br/>Deterministic 384-dim<br/>⚠️ NO SEMANTIC MEANING]
+        EmbedCheck -->|Yes| RealEmbed[Real Embeddings:<br/>all-MiniLM-L6-v2]
+        
+        HashEmbed --> StoreChroma
+        RealEmbed --> StoreChroma[Store in ChromaDB<br/>Collection: proj_projectId]
+        
+        StoreChroma --> UpdateLexical[Update BM25 Index<br/>In-Memory per Project]
+        UpdateLexical --> UpdateGraph[Build Dependency Graph:<br/>file → imports<br/>file ← importedBy]
+        
+        UpdateGraph --> IndexComplete[Index Complete]
+        SkipFile --> MoreFiles
+        IndexComplete --> MoreFiles{More<br/>Files?}
+        MoreFiles -->|Yes| LoopFiles
+        MoreFiles -->|No| IndexDone([Indexing Done])
+    end
+    
+    subgraph QueryProcess["B. QUERY PROCESSING PIPELINE"]
+        direction TB
+        UserQuery([User Submits Query]) --> AuthCheck{Project<br/>Authorization?}
+        AuthCheck -->|Denied| AuthFail[403 Forbidden]
+        AuthCheck -->|Approved| QueryUnderstand[Query Understanding]
+        
+        QueryUnderstand --> ExtractFiles[Extract Explicit:<br/>Filenames, Paths, Symbols]
+        ExtractFiles --> ArchDetect{Architecture<br/>Query?}
+        
+        ArchDetect -->|Yes| SetArchMode[Set Architecture Mode:<br/>Prioritize File Diversity]
+        ArchDetect -->|No| SetPrecision[Set Precision Mode:<br/>Highest Relevance]
+        
+        SetArchMode --> HybridRetrieval
+        SetPrecision --> HybridRetrieval[Hybrid Retrieval]
+        
+        HybridRetrieval --> FileMatch[Channel 1:<br/>Exact Filename Match<br/>Weight: 0.15]
+        HybridRetrieval --> LexicalSearch[Channel 2:<br/>BM25 Lexical Search<br/>Weight: 0.25]
+        HybridRetrieval --> VectorSearch[Channel 3:<br/>ChromaDB Vector Search<br/>Weight: 0.40<br/>⚠️ Hash Fallback]
+        HybridRetrieval --> DepGraph[Channel 4:<br/>Dependency Traversal<br/>Weight: 0.20]
+        
+        FileMatch --> FileScore[Normalize Score 0-1]
+        LexicalSearch --> LexScore[Normalize Score 0-1]
+        VectorSearch --> VecScore[Normalize Score 0-1]
+        DepGraph --> DepScore[Normalize Score 0-1]
+        
+        FileScore --> FusionEngine
+        LexScore --> FusionEngine
+        VecScore --> FusionEngine
+        DepScore --> FusionEngine[Rank Fusion Engine]
+        
+        FusionEngine --> WeightedSum[Weighted Sum:<br/>0.4×vec + 0.25×lex<br/>+ 0.2×dep + 0.15×file]
+        WeightedSum --> SortCandidates[Sort by Combined Score]
+        
+        SortCandidates --> SelectionStrategy{Selection<br/>Strategy}
+        SelectionStrategy -->|Architecture| FileDiversity[One Chunk per File<br/>Max Breadth]
+        SelectionStrategy -->|Precision| TopKScore[Top-K by Score<br/>Max Relevance]
+        
+        FileDiversity --> SelectChunks
+        TopKScore --> SelectChunks[Select Top-K Chunks<br/>Default K=6]
+        
+        SelectChunks --> BuildEvidence[Build Canonical Evidence]
+        BuildEvidence --> EvidenceManifest[Evidence Manifest:<br/>fileId, filePath, startLine-endLine<br/>snippet, fileContentHash, chunkHash]
+        
+        EvidenceManifest --> BuildPrompt[Build Grounded Prompt]
+        BuildPrompt --> SystemPrompt[System Instructions:<br/>Role, Grounding Rules]
+        SystemPrompt --> AttachEvidence[Attach Evidence Context:<br/>Source Files with Line Numbers]
+        AttachEvidence --> AttachQuery[Attach User Query]
+        
+        AttachQuery --> LLMRoute{LLM<br/>Provider}
+        LLMRoute -->|API Key| OpenRouter[OpenRouter/OpenAI API<br/>Model: gpt-4o-mini<br/>Timeout: 75s, 2 retries]
+        LLMRoute -->|No Key| OllamaFallback[Local Ollama<br/>Model: qwen2.5-coder:1.5b<br/>Timeout: 180s]
+        
+        OpenRouter --> LLMInference
+        OllamaFallback --> LLMInference[LLM Inference<br/>Temperature: 0.05]
+        
+        LLMInference --> ParseResponse[Parse LLM Response]
+        ParseResponse --> ExtractClaims[Extract Claims:<br/>Files, Lines, Symbols]
+        
+        ExtractClaims --> ValidateEvidence[Evidence Validator]
+        ValidateEvidence --> MatchClaims{Claims<br/>Match Evidence?}
+        
+        MatchClaims -->|All Matched| VerifiedResp[GROUNDED Response<br/>with Source Citations]
+        MatchClaims -->|Partial| PartialResp[PARTIAL Response<br/>Flag Ungrounded Claims]
+        MatchClaims -->|No Match| NoFinding[NO_FINDING<br/>Insufficient Evidence]
+        
+        VerifiedResp --> FormatResponse
+        PartialResp --> FormatResponse
+        NoFinding --> FormatResponse[Format Response]
+        
+        FormatResponse --> AttachSources[Attach Source References:<br/>fileId, filePath, lines<br/>Clickable Navigation]
+        AttachSources --> ReturnResponse[Return to Frontend]
+        ReturnResponse --> DisplayChat[Display in Chat Panel<br/>with Source Links]
+        DisplayChat --> LogEvent[Log AI_QUERY Event<br/>to SessionEvent]
+        LogEvent --> QueryDone([Query Complete])
+        
+        AuthFail --> QueryFailed([Query Failed])
+    end
+    
+    IndexingProcess -.->|Indexed Data| QueryProcess
+    
+    %% Styling
+    classDef startEnd fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    classDef process fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    classDef warning fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,stroke-dasharray: 5 5
+    classDef critical fill:#ffebee,stroke:#f44336,stroke-width:2px
+    classDef storage fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
+    
+    class SaveFile,UserQuery,IndexDone,QueryDone,QueryFailed startEnd
+    class AuthFail,NoFinding critical
+    class HashEmbed,VectorSearch warning
+    class StoreChroma,UpdateLexical,UpdateGraph,LogEvent storage
+    class IndexTrigger,LoopFiles,CheckStale,ASTChunk,EmbedCheck,MoreFiles,AuthCheck,ArchDetect,SelectionStrategy,LLMRoute,MatchClaims decision

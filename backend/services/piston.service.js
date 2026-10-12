@@ -65,8 +65,10 @@ const executeLocally = async (code, language, stdin = "") => {
       });
     });
 
-    if (stdin && child.stdin) {
-      child.stdin.write(stdin);
+    if (child.stdin) {
+      if (stdin) {
+        child.stdin.write(stdin);
+      }
       child.stdin.end();
     }
   });

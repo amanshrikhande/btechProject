@@ -1,0 +1,3 @@
+condition,runs_count,mean_duration_sec,median_duration_sec,sd_duration_sec,ci95_duration_low,ci95_duration_high,mean_total_edits,median_total_edits,mean_pA_edit_pct,mean_pB_edit_pct,mean_permission_grants,mean_permission_revocations,mean_permission_denied,conflict_rate
+AUTOMATED_CONTROLLED,20,1.4,1.0,0.5026246899500346,1.2,1.601249999999999,8.0,8.0,62.5,37.5,2.0,1.0,4.0,NOT_MEASURABLE
+AUTOMATED_NORMAL,20,1.0,1.0,0.0,1.0,1.0,10.0,10.0,50.0,50.0,0.0,0.0,0.0,NOT_MEASURABLE

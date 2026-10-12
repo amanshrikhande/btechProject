@@ -9,4 +9,5 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   aiServiceUrl: process.env.AI_SERVICE_URL || "http://127.0.0.1:8000",
   clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
+  internalServiceKey: process.env.INTERNAL_SERVICE_KEY || "devshare_internal_rag_secret_key_2025",
 };

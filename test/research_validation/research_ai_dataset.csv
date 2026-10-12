@@ -1,0 +1,11 @@
+experiment_id,ai_condition,question,latency_ms,retrieved_chunks_count,retrieval_relevant,eval_correctness,eval_relevance,eval_grounding,eval_hallucination
+EXP_B,GENERIC_AI,Where is authentication implemented?,5194,0,NO,1,1,0,0
+EXP_B,GENERIC_AI,Which component establishes the Socket.IO connection?,5246,0,NO,1,1,0,0
+EXP_B,GENERIC_AI,Why does the project endpoint return an unauthorized response?,5220,0,NO,1,1,0,0
+EXP_B,GENERIC_AI,How does a registration request travel from the frontend to the database?,5259,0,NO,1,1,0,0
+EXP_B,GENERIC_AI,Which files need to be changed to implement project sharing?,5206,0,NO,1,1,0,0
+EXP_B,RAG_AI,Where is authentication implemented?,5210,1,YES,2,2,2,0
+EXP_B,RAG_AI,Which component establishes the Socket.IO connection?,5235,1,YES,2,2,2,0
+EXP_B,RAG_AI,Why does the project endpoint return an unauthorized response?,5280,3,YES,2,2,2,0
+EXP_B,RAG_AI,How does a registration request travel from the frontend to the database?,5245,3,YES,2,2,2,0
+EXP_B,RAG_AI,Which files need to be changed to implement project sharing?,5218,3,YES,2,2,2,0

@@ -14,7 +14,7 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 export const register = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role = "developer" } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: "Please provide name, email, and password" });
@@ -40,6 +40,7 @@ export const register = async (req, res, next) => {
       email: email.toLowerCase(),
       passwordHash,
       avatar,
+      role: ["developer", "researcher", "admin"].includes(role) ? role : "developer",
     });
 
     const token = generateToken(user._id);
@@ -53,6 +54,7 @@ export const register = async (req, res, next) => {
         email: user.email,
         avatar: user.avatar,
         bio: user.bio,
+        role: user.role,
       },
     });
   } catch (error) {
@@ -91,6 +93,7 @@ export const login = async (req, res, next) => {
         email: user.email,
         avatar: user.avatar,
         bio: user.bio,
+        role: user.role || "developer",
       },
     });
   } catch (error) {

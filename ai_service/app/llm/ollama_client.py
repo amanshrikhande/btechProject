@@ -42,15 +42,9 @@ class OllamaClient:
                     data = res.json()
                     return data.get("response", "").strip()
                 else:
-                    return f"Ollama API returned status {res.status_code}: {res.text}"
+                    return f"LLM connection error. The language model returned an unexpected status. Please retry."
         except Exception as e:
             # Informative fallback if Ollama service is not running locally
-            return (
-                f"**[Local LLM Notice]** Ollama is not currently running at `{self.base_url}`.\n\n"
-                f"To activate local LLM inference:\n"
-                f"1. Install and start Ollama (`ollama serve`)\n"
-                f"2. Pull the coding model: `ollama run {self.model}`\n\n"
-                f"*Static ML defect analysis & ChromaDB RAG remain operational.*"
-            )
+            return "LLM connection error. The language model is not reachable. Please retry your request."
 
 ollama_client = OllamaClient()

@@ -1,0 +1,5 @@
+session_id,room_id,experiment_id,condition,duration_minutes,participants_count,code_changes,code_executions,successful_executions,failed_executions,ai_requests,permission_changes,focus_events,leader_mode_changes,ai_assistance_rate,task_efficiency,conflict_rate,total_events_recorded
+6ab00e5259fb8de8c4fe9077,EXP-A-TEST-NORMAL-001,EXP_A,NORMAL,5,2,2,1,1,0,0,0,0,0,0,10,0.0% (Single-buffer synchronized),9
+6ab00e5559fb8de8c4fe9078,EXP-A-TEST-CONTROLLED-001,EXP_A,CONTROLLED,5,2,1,0,0,0,0,2,0,1,0,0,0.0% (Single-buffer synchronized),8
+6ab00e5659fb8de8c4fe9079,EXP-A-METRICS-70-30,EXP_A,NORMAL,5,2,100,0,0,0,0,0,0,0,0,0,0.0% (Single-buffer synchronized),104
+6ab00f0059fb8de8c4fe907a,EXP-INTERVIEW-WEBRTC-001,EXP_A,INTERVIEW,2,2,0,0,0,0,0,0,3,0,0,0,0.0% (Single-buffer synchronized),14

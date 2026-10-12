@@ -1,0 +1,6 @@
+comparison,effect_size_cohens_d,effect_size_cliffs_delta
+Completion Time (Controlled vs Normal),1.125462867742275,0.4
+project_grounding (RAG vs Generic),0.9023778112773576,0.425
+correctness (RAG vs Generic),0.3337673612949566,0.175
+relevance (RAG vs Generic),0.7108267899247505,0.3425
+total_request_latency_ms (RAG vs Generic),5.258976783510056,1.0

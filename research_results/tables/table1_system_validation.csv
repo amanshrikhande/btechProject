@@ -1,0 +1,8 @@
+Subsystem,Status,Verification
+MongoDB Persistence,PASS,"27017 active, indexed collections"
+Real-time Socket.IO Mesh,PASS,Single-buffer synchronized broadcasts
+Leader Mode Authorization,PASS,100% unauthorized edit rejections
+Piston Code Sandbox,PASS,Isolated test harness evaluation
+ChromaDB Vector Store,PASS,Persistent cosine embeddings
+Ollama LLM Daemon,PASS,qwen2.5-coder:1.5b active on 11434
+CodeBERT Neural Classifier,FALLBACK,AST regex heuristic fallback

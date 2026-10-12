@@ -1,0 +1,6 @@
+comparison,test_name,statistic,p_value,effect_size_cohens_d,effect_size_cliffs_delta,significant_at_05,assumptions
+Completion Time (Controlled vs Normal),Wilcoxon signed-rank test,0.0,0.0046777349810472,1.125462867742275,0.4,True,Normality checked via Shapiro-Wilk; paired design
+project_grounding (RAG vs Generic),Mann-Whitney U test,285.0,0.0132376154625686,0.9023778112773576,0.425,True,"Independent samples, non-parametric ordinal/interval distribution"
+correctness (RAG vs Generic),Mann-Whitney U test,235.0,0.3138468365966258,0.3337673612949566,0.175,False,"Independent samples, non-parametric ordinal/interval distribution"
+relevance (RAG vs Generic),Mann-Whitney U test,268.5,0.0490994889578326,0.7108267899247505,0.3425,True,"Independent samples, non-parametric ordinal/interval distribution"
+total_request_latency_ms (RAG vs Generic),Mann-Whitney U test,400.0,6.79561512817336e-08,5.258976783510056,1.0,True,"Independent samples, non-parametric ordinal/interval distribution"

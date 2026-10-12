@@ -1,0 +1,2 @@
+total_repetitions,total_attempts,total_authorized,total_rejected,unauthorized_successes,unauthorized_failure_rate,security_verdict
+5,45,25,20,0,100.0,PASS

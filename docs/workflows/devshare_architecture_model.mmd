@@ -1,0 +1,268 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'14px', 'fontFamily':'Arial'}, 'flowchart': {'useMaxWidth': true}}}%%
+graph TB
+    %% ============================================================
+    %% DEVSHARE ARCHITECTURE MODEL DIAGRAM
+    %% Complete System Architecture - All Components & Interactions
+    %% ============================================================
+    
+    subgraph ClientLayer["🖥️ CLIENT LAYER - Frontend (React 19 + Vite 6)"]
+        subgraph UIComponents["User Interface Components"]
+            Login["🔑 Login/Register<br/>JWT Auth UI"]
+            Dashboard["📊 Dashboard<br/>Project List"]
+            Editor["✏️ Monaco Editor<br/>Code Editing"]
+            Terminal["💻 Terminal Panel<br/>Output Display"]
+            ChatPanel["💬 Chat Panel<br/>AI Assistance"]
+            VideoPanel["📹 Video Panel<br/>WebRTC Streams"]
+            Analytics["📈 Analytics Panel<br/>Session Metrics"]
+        end
+        
+        subgraph RealtimeLayer["Real-Time Communication"]
+            SocketIO["🔄 Socket.IO Client<br/>Event Emitter"]
+            P2PSignaling["📡 P2P Signaling<br/>WebRTC Setup"]
+        end
+        
+        subgraph LocalState["Client State Management"]
+            EditorState["Editor State<br/>Monaco Instance"]
+            UserRole["User Role<br/>Leader/Editor/Viewer"]
+            SessionState["Session State<br/>Room ID, Users"]
+        end
+    end
+    
+    subgraph BackendLayer["🔧 BACKEND LAYER - Node.js/Express"]
+        subgraph APIServer["Express API Server"]
+            AuthAPI["🔐 Auth Routes<br/>POST /auth/register<br/>POST /auth/login"]
+            ProjectAPI["📁 Project Routes<br/>CRUD Operations"]
+            RoomAPI["🎭 Room Routes<br/>Session Management"]
+            ExecutionAPI["⚡ Execution Routes<br/>Code Run Endpoint"]
+            AnalyticsAPI["📊 Analytics Routes<br/>Event Aggregation"]
+        end
+        
+        subgraph SocketManager["Socket.IO Event Handler"]
+            CodeSync["📝 Code Sync Events<br/>edit, save, broadcast"]
+            PresenceEvents["👥 Presence Events<br/>user_joined, left"]
+            PermissionEvents["🔒 Permission Events<br/>lock, grant_edit"]
+            InterviewEvents["🎥 Interview Events<br/>tab_hidden, visible"]
+        end
+        
+        subgraph DatabaseLayer["MongoDB Database"]
+            UsersCol["👤 Users Collection<br/>email, password_hash<br/>created_at"]
+            ProjectsCol["📂 Projects Collection<br/>name, owner_id<br/>files[]"]
+            RoomSessionsCol["🎭 RoomSessions Collection<br/>project_id, members<br/>created_at, ended_at"]
+            FilesCol["📄 Files Collection<br/>projectId, content<br/>line_count, version"]
+            SessionEventsCol["📋 SessionEvents Collection<br/>type, user_id<br/>timestamp, metadata"]
+        end
+        
+        subgraph MiddlewareAuth["Authentication & Authorization"]
+            JWTVerify["🔑 JWT Verification<br/>Token Validation"]
+            PermissionCheck["🔒 Permission Check<br/>Role-Based Access"]
+            RateLimiter["⏱️ Rate Limiter<br/>API Throttling"]
+        end
+    end
+    
+    subgraph AILayer["🤖 AI SERVICE LAYER - Python/FastAPI"]
+        subgraph FastAPIServer["FastAPI Server"]
+            HealthCheck["❤️ Health Check<br/>GET /health"]
+            QueryEndpoint["🎯 Query Endpoint<br/>POST /query<br/>project_id, query"]
+            CodeAnalysisEP["🔍 Code Analysis<br/>POST /analyze"]
+        end
+        
+        subgraph RAGPipeline["RAG Pipeline - Project-Aware"]
+            QueryProcessor["📥 Query Processor<br/>Normalize & Context"]
+            
+            subgraph HybridRetrieval["Hybrid Retrieval System"]
+                FilenameRetriever["1️⃣ Filename Matcher<br/>Pattern Regex Match<br/>Exact/Partial Files"]
+                BM25Engine["2️⃣ BM25 Lexical<br/>Keyword Search<br/>TF-IDF Ranking"]
+                VectorDB["3️⃣ Vector Search<br/>ChromaDB Semantic<br/>sentence-transformers"]
+                DepGraphTraversal["4️⃣ Dependency Graph<br/>Import/Export Links<br/>Related Modules"]
+            end
+            
+            MergeRankFusion["🔀 Merge & Rank<br/>Weighted Fusion<br/>Top-K Selection"]
+            EvidenceBuilder["🧩 Evidence Builder<br/>fileId + line ranges<br/>Canonical Form"]
+            EvidenceValidator["✅ Evidence Validator<br/>Sufficiency Check<br/>Coverage Analysis"]
+        end
+        
+        subgraph PromptEngineer["Prompt Engineering"]
+            SystemPrompt["📋 System Prompt<br/>Role & Context"]
+            EvidenceInsertion["🔗 Evidence Insertion<br/>Code Chunks +<br/>Line References"]
+            PromptConstructor["🏗️ Prompt Constructor<br/>System + Evidence<br/>+ Query"]
+        end
+        
+        subgraph LLMIntegration["LLM Integration"]
+            OllamaClient["🦙 Ollama Client<br/>qwen2.5-coder:1.5b<br/>Local Inference"]
+            OpenRouterFallback["☁️ OpenRouter Fallback<br/>gpt-4, claude<br/>Cloud-based LLM"]
+            LLMSelector["🔀 LLM Selector<br/>Route by Model<br/>Availability"]
+        end
+        
+        subgraph AnswerValidation["Answer Validation"]
+            GroundingChecker["🔍 Grounding Checker<br/>Verify Claims<br/>vs Evidence"]
+            SourceCitations["📚 Source Citations<br/>Build Reference List<br/>fileId + lines"]
+            FinalAnswer["✨ Final Answer<br/>Response + Citations<br/>Confidence Score"]
+        end
+        
+        subgraph EmbeddingsModule["Embeddings & Vectors"]
+            ModelLoader["🎯 Model Loader<br/>sentence-transformers<br/>all-MiniLM-L6-v2"]
+            EmbedText["🔢 Embed Text<br/>384-dimensional<br/>Normalized Vectors"]
+            VectorStore["💾 Vector Store<br/>ChromaDB Persistent<br/>Collection Management"]
+        end
+    end
+    
+    subgraph ExecutionLayer["⚡ CODE EXECUTION LAYER"]
+        subgraph PistonAPI["Piston API - Sandbox"]
+            PistonRuntimes["🐍 Runtimes<br/>Python, Node.js<br/>C++, Java, Go"]
+            ContainerExec["📦 Container Execution<br/>Isolated Environment<br/>Resource Limits"]
+            OutputCapture["📤 Output Capture<br/>stdout/stderr<br/>Exit Code"]
+        end
+        
+        subgraph LocalExecution["Local Fallback"]
+            NodeSubprocess["⚙️ Node.js Subprocess<br/>child_process<br/>JS/TS Execution"]
+            PythonSubprocess["🐍 Python Subprocess<br/>subprocess module<br/>PY Execution"]
+            FileSystem["📁 File System<br/>Temp Scripts<br/>Cleanup"]
+        end
+    end
+    
+    subgraph StorageLayer["💾 STORAGE & PERSISTENCE"]
+        ChromaDB["🟣 ChromaDB<br/>Vector Database<br/>Embeddings Storage"]
+        MongoDB["🍃 MongoDB<br/>Document Database<br/>Users, Projects,<br/>Sessions, Events"]
+        FileSystem2["📁 File System<br/>Local Project Files<br/>Temp Execution"]
+    end
+    
+    subgraph ExternalServices["🌐 EXTERNAL SERVICES"]
+        PistonExt["🔗 Piston API<br/>Code Execution<br/>Sandbox"]
+        OllamaExt["🦙 Ollama Local<br/>LLM Inference<br/>GPT-Style"]
+        OpenRouterExt["☁️ OpenRouter API<br/>LLM Aggregator<br/>Multiple Models"]
+    end
+    
+    subgraph AdvancedFeatures["🎯 ADVANCED FEATURES"]
+        LeaderMode["👑 Leader Mode<br/>Lock/Unlock Files<br/>Grant/Revoke Edit<br/>User Monitoring"]
+        
+        InterviewMode["🎥 Interview Mode<br/>Focus Tracking<br/>TAB_HIDDEN Events<br/>Telemetry Logging"]
+        
+        WebRTCComm["📹 WebRTC Communication<br/>Full-Mesh P2P<br/>Audio/Video Streams<br/>Signaling via Socket.IO"]
+        
+        Analytics2["📊 Analytics System<br/>SessionEvents Logging<br/>CSV/JSON Export<br/>Research Data"]
+    end
+    
+    %% ============================================================
+    %% CONNECTIONS & DATA FLOW
+    %% ============================================================
+    
+    %% CLIENT TO BACKEND
+    Login --> AuthAPI
+    Dashboard --> ProjectAPI
+    Editor --> SocketIO
+    SocketIO --> CodeSync
+    Terminal --> ExecutionAPI
+    ChatPanel --> QueryEndpoint
+    VideoPanel --> P2PSignaling
+    Analytics --> AnalyticsAPI
+    
+    %% BACKEND API FLOWS
+    AuthAPI --> JWTVerify
+    ProjectAPI --> PermissionCheck
+    RoomAPI --> SessionState
+    ExecutionAPI --> PistonExt
+    AnalyticsAPI --> SessionEventsCol
+    
+    %% BACKEND TO DATABASE
+    JWTVerify --> UsersCol
+    ProjectAPI --> ProjectsCol
+    RoomAPI --> RoomSessionsCol
+    CodeSync --> FilesCol
+    CodeSync --> SessionEventsCol
+    
+    %% SOCKET.IO EVENT HANDLING
+    SocketIO --> PresenceEvents
+    SocketIO --> PermissionEvents
+    SocketIO --> InterviewEvents
+    PresenceEvents --> RoomSessionsCol
+    PermissionEvents --> SessionEventsCol
+    InterviewEvents --> SessionEventsCol
+    
+    %% AI SERVICE FLOWS
+    QueryEndpoint --> QueryProcessor
+    QueryProcessor --> HybridRetrieval
+    
+    %% HYBRID RETRIEVAL FLOWS
+    FilenameRetriever --> ProjectsCol
+    BM25Engine --> FilesCol
+    VectorDB --> ChromaDB
+    DepGraphTraversal --> FilesCol
+    
+    FilenameRetriever --> MergeRankFusion
+    BM25Engine --> MergeRankFusion
+    VectorDB --> MergeRankFusion
+    DepGraphTraversal --> MergeRankFusion
+    
+    %% EVIDENCE & PROMPT FLOW
+    MergeRankFusion --> EvidenceBuilder
+    EvidenceBuilder --> EvidenceValidator
+    EvidenceValidator --> SystemPrompt
+    EvidenceValidator --> EvidenceInsertion
+    SystemPrompt --> PromptConstructor
+    EvidenceInsertion --> PromptConstructor
+    
+    %% LLM INTEGRATION
+    PromptConstructor --> LLMSelector
+    LLMSelector --> OllamaClient
+    LLMSelector --> OpenRouterFallback
+    OllamaClient --> OllamaExt
+    OpenRouterFallback --> OpenRouterExt
+    
+    %% VALIDATION & RESPONSE
+    OllamaClient --> GroundingChecker
+    OpenRouterFallback --> GroundingChecker
+    GroundingChecker --> SourceCitations
+    SourceCitations --> FinalAnswer
+    FinalAnswer --> ChatPanel
+    
+    %% EMBEDDINGS
+    ModelLoader --> EmbedText
+    EmbedText --> VectorStore
+    VectorStore --> ChromaDB
+    VectorDB --> EmbedText
+    
+    %% EXECUTION PATHS
+    ExecutionAPI --> PistonRuntimes
+    ExecutionAPI --> NodeSubprocess
+    PistonRuntimes --> OutputCapture
+    NodeSubprocess --> OutputCapture
+    PythonSubprocess --> OutputCapture
+    OutputCapture --> Terminal
+    FileSystem --> FileSystem2
+    
+    %% ADVANCED FEATURES
+    CodeSync --> LeaderMode
+    LeaderMode --> PermissionEvents
+    
+    PresenceEvents --> InterviewMode
+    InterviewMode --> InterviewEvents
+    
+    P2PSignaling --> WebRTCComm
+    WebRTCComm --> PresenceEvents
+    
+    AnalyticsAPI --> Analytics2
+    SessionEventsCol --> Analytics2
+    
+    %% PERSISTENCE
+    EvidenceValidator --> VectorStore
+    FilesCol --> FileSystem2
+    
+    %% ============================================================
+    %% STYLING & COLORS
+    %% ============================================================
+    
+    classDef clientNode fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef backendNode fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#4a148c
+    classDef aiNode fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#004d40
+    classDef execNode fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#bf360c
+    classDef storageNode fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#880e4f
+    classDef extNode fill:#f1f8e9,stroke:#558b2f,stroke-width:2px,color:#33691e
+    classDef featureNode fill:#fce4ec,stroke:#ad1457,stroke-width:2px,color:#6a0572
+    
+    class Login,Dashboard,Editor,Terminal,ChatPanel,VideoPanel,Analytics,SocketIO,P2PSignaling,EditorState,UserRole,SessionState clientNode
+    class AuthAPI,ProjectAPI,RoomAPI,ExecutionAPI,AnalyticsAPI,JWTVerify,PermissionCheck,RateLimiter,CodeSync,PresenceEvents,PermissionEvents,InterviewEvents,UsersCol,ProjectsCol,RoomSessionsCol,FilesCol,SessionEventsCol backendNode
+    class FastAPIServer,QueryEndpoint,CodeAnalysisEP,QueryProcessor,FilenameRetriever,BM25Engine,VectorDB,DepGraphTraversal,MergeRankFusion,EvidenceBuilder,EvidenceValidator,SystemPrompt,EvidenceInsertion,PromptConstructor,OllamaClient,OpenRouterFallback,LLMSelector,GroundingChecker,SourceCitations,FinalAnswer,ModelLoader,EmbedText,VectorStore aiNode
+    class PistonRuntimes,ContainerExec,OutputCapture,NodeSubprocess,PythonSubprocess,FileSystem execNode
+    class ChromaDB,MongoDB,FileSystem2 storageNode
+    class PistonExt,OllamaExt,OpenRouterExt extNode
+    class LeaderMode,InterviewMode,WebRTCComm,Analytics2 featureNode

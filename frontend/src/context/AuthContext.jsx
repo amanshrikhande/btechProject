@@ -5,10 +5,18 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("devshare_user");
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem("devshare_user");
+      return saved && saved !== "undefined" && saved !== "null" ? JSON.parse(saved) : null;
+    } catch {
+      localStorage.removeItem("devshare_user");
+      return null;
+    }
   });
-  const [token, setToken] = useState(() => localStorage.getItem("devshare_token"));
+  const [token, setToken] = useState(() => {
+    const savedToken = localStorage.getItem("devshare_token");
+    return savedToken && savedToken !== "undefined" && savedToken !== "null" ? savedToken : null;
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

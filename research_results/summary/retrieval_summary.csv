@@ -1,0 +1,2 @@
+total_queries,mean_hit_1,mean_hit_3,mean_hit_5,mrr,mean_recall,mean_chunks_retrieved,mean_retrieval_latency_ms,median_retrieval_latency_ms
+20,0.6,0.7,0.7,0.65,0.6917,5.0,447.4,364.0

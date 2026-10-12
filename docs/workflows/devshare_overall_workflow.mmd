@@ -1,0 +1,184 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'15px', 'fontFamily':'Arial'}}}%%
+flowchart TD
+    %% ============================================================
+    %% DEVSHARE OVERALL WORKFLOW DIAGRAM
+    %% AI-Powered Collaborative Coding Platform
+    %% ============================================================
+    
+    Start([User Opens DevShare]) --> Auth[Authentication]
+    
+    subgraph Authentication["🔐 Authentication Layer"]
+        Auth --> Login{Login or<br/>Register?}
+        Login -->|Register| CreateAccount[Create Account<br/>JWT Token]
+        Login -->|Login| ValidateCredentials[Validate Credentials<br/>MongoDB Users]
+        CreateAccount --> AuthSuccess[Authentication Successful]
+        ValidateCredentials --> AuthSuccess
+    end
+    
+    AuthSuccess --> Dashboard[Project Dashboard]
+    
+    subgraph ProjectManagement["📁 Project Management"]
+        Dashboard --> ProjectChoice{Project<br/>Action?}
+        ProjectChoice -->|Create New| CreateProject[Create New Project<br/>MongoDB]
+        ProjectChoice -->|Open Existing| LoadProject[Load Existing Project<br/>MongoDB ProjectFiles]
+        ProjectChoice -->|Join Session| JoinShared[Join via Room ID]
+        
+        CreateProject --> EnterWorkspace[Enter Collaborative<br/>Workspace]
+        LoadProject --> EnterWorkspace
+        JoinShared --> EnterWorkspace
+    end
+    
+    EnterWorkspace --> InitWorkspace[Initialize Monaco Editor<br/>Socket.IO Connection]
+    
+    subgraph CollaborativeIDE["💻 Collaborative IDE Workspace"]
+        InitWorkspace --> AssignRole{Assign<br/>User Role}
+        AssignRole -->|Project Owner| RoleLeader[LEADER<br/>Full Control]
+        AssignRole -->|Member/Guest| RoleEditor[EDITOR/VIEWER<br/>Based on Permissions]
+        
+        RoleLeader --> WorkspaceReady[Workspace Ready]
+        RoleEditor --> WorkspaceReady
+        
+        WorkspaceReady --> ParallelFeatures{Select<br/>Feature}
+        
+        %% Parallel Features
+        ParallelFeatures -->|Code Edit| Collaboration[Real-Time<br/>Collaboration]
+        ParallelFeatures -->|AI Help| AIAssist[AI Code<br/>Assistance]
+        ParallelFeatures -->|Run Code| Execute[Code<br/>Execution]
+        ParallelFeatures -->|Audio/Video| Communication[WebRTC<br/>Communication]
+        ParallelFeatures -->|Permissions| LeaderCtrl[Leader Mode<br/>Controls]
+        ParallelFeatures -->|Research| InterviewSession[Interview Mode<br/>Telemetry]
+        ParallelFeatures -->|Analytics| ViewAnalytics[Session<br/>Analytics]
+        ParallelFeatures -->|Exit| EndSession[End Session]
+    end
+    
+    %% Real-Time Collaboration Branch
+    Collaboration --> EditCode[Edit Code in<br/>Monaco Editor]
+    EditCode --> BroadcastChanges[Broadcast Changes<br/>via Socket.IO]
+    BroadcastChanges --> UpdatePeers[Update All Peers<br/>Real-Time Sync]
+    UpdatePeers --> AutoSave[Auto-Save to MongoDB<br/>2 sec debounce]
+    AutoSave --> ReturnWorkspace1[Return to<br/>Workspace]
+    
+    %% AI Assistance Branch (Expanded)
+    subgraph AIRagPipeline["🤖 AI Assistance Pipeline - Project-Aware RAG"]
+        direction TB
+        AIAssist --> CheckAuth{Authorized<br/>Project Member?}
+        CheckAuth -->|No| AuthFail[403 Forbidden]
+        CheckAuth -->|Yes| SendQuery[Send Query to<br/>AI Service FastAPI]
+        
+        SendQuery --> HybridRetrieval[Hybrid Retrieval Engine]
+        HybridRetrieval --> FilenameMatch[1. Exact Filename<br/>Pattern Match]
+        HybridRetrieval --> BM25Search[2. BM25 Lexical<br/>Keyword Search]
+        HybridRetrieval --> VectorSearch[3. ChromaDB Vector<br/>Semantic Search]
+        HybridRetrieval --> DepGraph[4. Dependency Graph<br/>Traversal]
+        
+        FilenameMatch --> MergeRank[Merge & Rank Results<br/>Weighted Fusion]
+        BM25Search --> MergeRank
+        VectorSearch --> MergeRank
+        DepGraph --> MergeRank
+        
+        MergeRank --> SelectChunks[Select Top-K<br/>Relevant Chunks]
+        SelectChunks --> BuildEvidence[Build Canonical Evidence<br/>fileId + line ranges]
+        
+        BuildEvidence --> CheckEvidence{Sufficient<br/>Evidence?}
+        CheckEvidence -->|No| InsufficientEvidence[Return:<br/>INSUFFICIENT_EVIDENCE]
+        CheckEvidence -->|Yes| ConstructPrompt[Construct Grounded Prompt<br/>System + Evidence + Query]
+        
+        ConstructPrompt --> CallLLM[Generate Answer<br/>Ollama/OpenRouter]
+        CallLLM --> ValidateAnswer[Validate Evidence<br/>References]
+        
+        ValidateAnswer --> CheckGrounding{Claims<br/>Grounded?}
+        CheckGrounding -->|No| UnsupportedClaims[Flag Unsupported Claims]
+        CheckGrounding -->|Yes| ValidAnswer[Return Answer +<br/>Source Citations]
+        
+        ValidAnswer --> DisplayAnswer[Display in Chat Panel<br/>with Source Links]
+        UnsupportedClaims --> DisplayAnswer
+        InsufficientEvidence --> DisplayAnswer
+    end
+    
+    DisplayAnswer --> LogAIQuery[Log AI_QUERY Event<br/>SessionEvent MongoDB]
+    LogAIQuery --> ReturnWorkspace2[Return to<br/>Workspace]
+    AuthFail --> ReturnWorkspace2
+    
+    %% Code Execution Branch
+    Execute --> SendToPiston[Send Code to<br/>Piston API]
+    SendToPiston --> PistonAvailable{Piston<br/>Available?}
+    PistonAvailable -->|Yes| PistonExec[Sandboxed Container<br/>Execution]
+    PistonAvailable -->|No| LocalFallback[Local Node.js/Python<br/>Subprocess Fallback]
+    
+    PistonExec --> ExecResult[Collect stdout/stderr<br/>Exit Code]
+    LocalFallback --> ExecResult
+    ExecResult --> LogExecution[Log ExecutionLog<br/>MongoDB]
+    LogExecution --> DisplayTerminal[Display in<br/>Terminal Panel]
+    DisplayTerminal --> ReturnWorkspace3[Return to<br/>Workspace]
+    
+    %% WebRTC Communication Branch
+    Communication --> InitWebRTC[Initialize WebRTC<br/>Full-Mesh Topology]
+    InitWebRTC --> SignalViaSockets[Exchange Offer/Answer<br/>via Socket.IO]
+    SignalViaSockets --> EstablishP2P[Establish P2P<br/>Connections]
+    EstablishP2P --> MediaActive[Audio/Video<br/>Streams Active]
+    MediaActive --> ReturnWorkspace4[Return to<br/>Workspace]
+    
+    %% Leader Mode Branch
+    LeaderCtrl --> CheckLeader{Is User<br/>Leader?}
+    CheckLeader -->|No| DenyPermission[Permission Denied]
+    CheckLeader -->|Yes| LeaderActions[Enable/Disable Lock<br/>Grant/Revoke Edit]
+    LeaderActions --> BroadcastPerms[Broadcast Permission<br/>Updates via Socket.IO]
+    BroadcastPerms --> LogPermEvent[Log Permission Event<br/>SessionEvent MongoDB]
+    LogPermEvent --> ReturnWorkspace5[Return to<br/>Workspace]
+    DenyPermission --> ReturnWorkspace5
+    
+    %% Interview Mode Branch
+    InterviewSession --> CheckLeader2{Is User<br/>Leader?}
+    CheckLeader2 -->|No| DenyInterview[Permission Denied]
+    CheckLeader2 -->|Yes| SelectCandidate[Select Candidate<br/>Show Privacy Modal]
+    SelectCandidate --> CandidateConsent{Candidate<br/>Consents?}
+    CandidateConsent -->|No| CancelInterview[Cancel Interview]
+    CandidateConsent -->|Yes| StartTracking[Start Focus/Visibility<br/>Tracking]
+    StartTracking --> TrackEvents[Track TAB_HIDDEN<br/>TAB_VISIBLE Events]
+    TrackEvents --> AlertLeader[Alert Leader on<br/>Focus Loss]
+    AlertLeader --> LogTelemetry[Log Interview Events<br/>SessionEvent MongoDB]
+    LogTelemetry --> ReturnWorkspace6[Return to<br/>Workspace]
+    DenyInterview --> ReturnWorkspace6
+    CancelInterview --> ReturnWorkspace6
+    
+    %% Analytics Branch
+    ViewAnalytics --> FetchEvents[Fetch SessionEvents<br/>from MongoDB]
+    FetchEvents --> GenerateCharts[Generate Analytics<br/>Edits/Executions/Queries]
+    GenerateCharts --> ExportOption{Export<br/>Data?}
+    ExportOption -->|Yes| ExportCSV[Export CSV/JSON<br/>for Research]
+    ExportOption -->|No| ReturnWorkspace7[Return to<br/>Workspace]
+    ExportCSV --> ReturnWorkspace7
+    
+    %% Return paths converge
+    ReturnWorkspace1 --> ParallelFeatures
+    ReturnWorkspace2 --> ParallelFeatures
+    ReturnWorkspace3 --> ParallelFeatures
+    ReturnWorkspace4 --> ParallelFeatures
+    ReturnWorkspace5 --> ParallelFeatures
+    ReturnWorkspace6 --> ParallelFeatures
+    ReturnWorkspace7 --> ParallelFeatures
+    
+    %% End Session
+    EndSession --> FlushBuffers[Flush File Buffers<br/>to MongoDB]
+    FlushBuffers --> UpdateRoomSession[Update RoomSession<br/>endedAt timestamp]
+    UpdateRoomSession --> LogUserLeft[Log USER_LEFT<br/>Event]
+    LogUserLeft --> CheckReassign{Leader<br/>Leaving?}
+    CheckReassign -->|Yes| ReassignLeader[Reassign Leader<br/>if Members Remain]
+    CheckReassign -->|No| End
+    ReassignLeader --> End([Session Complete])
+    
+    %% ============================================================
+    %% STYLING
+    %% ============================================================
+    classDef startEndClass fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    classDef processClass fill:#bbdefb,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef decisionClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px,color:#f57f17
+    classDef criticalClass fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#b71c1c
+    classDef storageClass fill:#e1bee7,stroke:#6a1b9a,stroke-width:2px,color:#4a148c
+    classDef aiClass fill:#b2dfdb,stroke:#00695c,stroke-width:2px,color:#004d40
+    
+    class Start,End startEndClass
+    class Login,ProjectChoice,AssignRole,ParallelFeatures,PistonAvailable,CheckAuth,CheckEvidence,CheckGrounding,CheckLeader,CheckLeader2,CandidateConsent,ExportOption,CheckReassign decisionClass
+    class AuthFail,DenyPermission,DenyInterview,InsufficientEvidence,UnsupportedClaims criticalClass
+    class AutoSave,LogExecution,LogAIQuery,LogPermEvent,LogTelemetry,FlushBuffers,UpdateRoomSession storageClass
+    class HybridRetrieval,FilenameMatch,BM25Search,VectorSearch,DepGraph,MergeRank,SelectChunks,BuildEvidence,ConstructPrompt,CallLLM,ValidateAnswer aiClass
