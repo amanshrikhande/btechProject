@@ -4,6 +4,17 @@ data
 *.env
 dist
 chroma_db
+chroma_test
 __pycache__
 .venv
 *.pyc
+
+# Scratch and debug files
+scratch/
+*.log
+
+# Generated reports and manifests
+benchmark_manifest.json
+*_REPORT.md
+*_AUDIT.md
+*_VALIDATION.md
