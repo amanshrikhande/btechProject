@@ -18,3 +18,11 @@ benchmark_manifest.json
 *_REPORT.md
 *_AUDIT.md
 *_VALIDATION.md
+
+# Docker and deployment configs (not used in this project)
+Dockerfile
+*.Dockerfile
+docker-compose*.yml
+.dockerignore
+nginx.conf
+init-mongo.js

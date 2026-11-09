@@ -139,15 +139,11 @@ Before you begin, ensure the following are installed on your system:
    - Download from https://git-scm.com
    - Verify: `git --version`
 
-5. **Docker** and **Docker Compose** (optional, for containerized deployment)
-   - Download from https://www.docker.com
-   - Verify: `docker --version`
-
-6. **OpenRouter API Key** (optional but recommended for AI assistant)
+5. **OpenRouter API Key** (optional but recommended for AI assistant)
    - Sign up at https://openrouter.ai
    - Without a key, the AI service falls back to a local Ollama instance
 
-7. **Ollama** (optional, for local LLM fallback)
+6. **Ollama** (optional, for local LLM fallback)
    - Download from https://ollama.com
    - Pull the model: `ollama pull qwen2.5-coder:1.5b`
 
@@ -159,11 +155,8 @@ Before you begin, ensure the following are installed on your system:
 DevShare/
 |-- package.json              # Root package (backend dependencies, scripts)
 |-- .env                      # Root environment variables (backend)
-|-- .env.production.example   # Production env template
-|-- docker-compose.yml        # MongoDB container for development
 |-- backend/
 |   |-- index.js              # Express + Socket.IO server entry point
-|   |-- Dockerfile            # Backend container definition
 |   |-- config/
 |   |   |-- config.js         # App configuration
 |   |   |-- db.js             # MongoDB connection logic
@@ -175,8 +168,6 @@ DevShare/
 |   |-- sockets/              # Socket.IO event handlers
 |-- frontend/
 |   |-- package.json          # Frontend dependencies
-|   |-- Dockerfile            # Frontend container (Nginx)
-|   |-- nginx.conf             # Nginx production config
 |   |-- src/
 |   |   |-- App.jsx           # Root component and routing
 |   |   |-- pages/            # Page components
@@ -185,7 +176,6 @@ DevShare/
 |   |   |-- hooks/            # Custom React hooks (useWebRTC, etc.)
 |-- ai_service/
 |   |-- requirements.txt       # Python dependencies
-|   |-- Dockerfile            # AI service container definition
 |   |-- app/
 |   |   |-- main.py            # FastAPI app and endpoints
 |   |   |-- config.py          # Pydantic settings
@@ -306,7 +296,7 @@ pip install -r requirements.txt
 
 ### Step 6: Start MongoDB
 
-You have three options:
+You have two options:
 
 **Option A: Local MongoDB service**
 
@@ -322,13 +312,7 @@ On Windows, you can also start it as a service:
 Start-Service MongoDB
 ```
 
-**Option B: Docker**
-
-```bash
-docker-compose up -d mongodb
-```
-
-**Option C: MongoDB Atlas (cloud)**
+**Option B: MongoDB Atlas (cloud)**
 
 Create a free cluster at https://www.mongodb.com/atlas, then update `MONGODB_URI` in your root `.env`:
 
@@ -581,49 +565,6 @@ Final score = 0.40 x semantic + 0.25 x lexical + 0.20 x structural + 0.15 x file
 
 ---
 
-## Deployment
-
-### Docker Compose (Full Stack)
-
-Create a `docker-compose.prod.yml` with all four services (MongoDB, backend, AI service, frontend) and run:
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-Each service has a Dockerfile:
-
-- `backend/Dockerfile` — Multi-stage build with Node.js 20 Alpine, runs as non-root user
-- `ai_service/Dockerfile` — Multi-stage build with Python 3.11 slim, CPU-only PyTorch
-- `frontend/Dockerfile` — Builds React app and serves static files via Nginx
-
-### Environment Configuration for Production
-
-Copy `.env.production.example` to `.env.production` and update all values:
-
-- Use MongoDB Atlas or a secured MongoDB instance
-- Set a strong random JWT secret (at least 32 characters)
-- Update service URLs to your production domains
-- Add your OpenRouter API key
-- Enable HTTPS via your hosting provider or reverse proxy
-
-### Cloud Platforms
-
-DevShare can be deployed to cloud platforms that support Node.js and Python:
-
-1. **Backend** — Deploy to any Node.js host (Railway, Render, Heroku)
-2. **AI Service** — Deploy to any Python host (Railway, Render, Fly.io)
-3. **Frontend** — Build static files and deploy to Vercel, Netlify, or any static host
-4. **Database** — Use MongoDB Atlas (free tier available)
-
-Key points for cloud deployment:
-- Set all environment variables in your hosting platform's dashboard
-- Ensure the backend `CLIENT_URL` matches your frontend domain
-- Ensure `AI_SERVICE_URL` points to your deployed AI service
-- Frontend env vars must be set at build time (Vite inlines them)
-
----
-
 ## Troubleshooting
 
 ### MongoDB Connection Refused
@@ -634,8 +575,7 @@ Key points for cloud deployment:
 1. Verify MongoDB is running: `mongod --version`
 2. Start the MongoDB daemon: `mongod --dbpath /path/to/data/db`
 3. Check that the data directory exists and is writable
-4. If using Docker, run `docker-compose up -d mongodb`
-5. If using Atlas, verify your connection string and network access
+4. If using MongoDB Atlas, verify your connection string and network access
 
 ### Backend Starts in Demo Mode
 
